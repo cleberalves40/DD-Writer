@@ -1,10 +1,11 @@
+import math
 import re
 import os
 import signal
 import sys
 import time
 
-from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtCore import QThread, QTimer, pyqtSignal
 from PyQt5.QtWidgets import (
     QApplication,
     QComboBox,
@@ -18,12 +19,17 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from dd_writer import list_devices, validate_write, write_image
+from dd_writer import (
+    estimate_remaining_seconds,
+    list_devices,
+    validate_write,
+    write_image,
+)
 
 
 class DdThread(QThread):
     progress = pyqtSignal(int)
-    eta = pyqtSignal(str)
+    eta = pyqtSignal(object)
     result = pyqtSignal(str)
 
     def __init__(self, image_path, device_path):
@@ -35,7 +41,6 @@ class DdThread(QThread):
 
     def run(self):
         output_lines = []
-        started_at = time.monotonic()
         try:
             if self.cancelled:
                 self.result.emit("Operation cancelled.")
@@ -43,6 +48,7 @@ class DdThread(QThread):
             self.process, image_size = write_image(
                 self.image_path, self.device_path
             )
+            started_at = time.monotonic()
             if self.cancelled:
                 self.stop()
             for line in self.process.stderr:
@@ -53,26 +59,28 @@ class DdThread(QThread):
                     transferred = int(match.group(1))
                     progress = min(99, int(transferred * 100 / image_size))
                     self.progress.emit(progress)
-                    if progress > 0:
-                        elapsed = time.monotonic() - started_at
-                        remaining = int(elapsed * (100 - progress) / progress)
-                        self.eta.emit(
-                            f"ETA: {remaining // 60}m {remaining % 60}s"
-                        )
+                    remaining = estimate_remaining_seconds(
+                        image_size, transferred, time.monotonic() - started_at
+                    )
+                    if remaining is not None:
+                        self.eta.emit(remaining)
             return_code = self.process.wait()
             if self.cancelled:
+                self.eta.emit(None)
                 self.result.emit("Operation cancelled.")
             elif return_code == 0:
                 self.progress.emit(100)
                 self.eta.emit("Completed")
                 self.result.emit("Image successfully written.")
             else:
+                self.eta.emit(None)
                 detail = "\n".join(line for line in output_lines if line)
                 self.result.emit(
                     f"Failed to write image (exit code {return_code})."
                     + (f"\n{detail}" if detail else "")
                 )
         except (OSError, RuntimeError, ValueError) as error:
+            self.eta.emit(None)
             self.result.emit(str(error))
 
     def stop(self):
@@ -126,6 +134,11 @@ class App(QWidget):
         main_layout.addWidget(self.status_label)
         self.eta_label = QLabel("ETA: --")
         main_layout.addWidget(self.eta_label)
+        self.eta_seconds = None
+        self.eta_updated_at = None
+        self.eta_timer = QTimer(self)
+        self.eta_timer.setInterval(1000)
+        self.eta_timer.timeout.connect(self.refresh_eta)
         self.progress_bar = QProgressBar()
         main_layout.addWidget(self.progress_bar)
 
@@ -196,7 +209,7 @@ class App(QWidget):
         self.abort_button.setEnabled(True)
         self.dd_thread = DdThread(self.image_path, device_path)
         self.dd_thread.progress.connect(self.progress_bar.setValue)
-        self.dd_thread.eta.connect(self.eta_label.setText)
+        self.dd_thread.eta.connect(self.update_eta)
         self.dd_thread.result.connect(self.show_message)
         self.dd_thread.finished.connect(self.operation_finished)
         self.dd_thread.start()
@@ -211,6 +224,37 @@ class App(QWidget):
         self.write_button.setEnabled(True)
         self.abort_button.setEnabled(False)
         self.populate_devices()
+
+    def update_eta(self, estimate):
+        if estimate == "Completed":
+            self.eta_timer.stop()
+            self.eta_seconds = None
+            self.eta_updated_at = None
+            self.eta_label.setText("Completed")
+            return
+        if estimate is None:
+            self.eta_timer.stop()
+            self.eta_seconds = None
+            self.eta_updated_at = None
+            self.eta_label.setText("ETA: --")
+            return
+
+        self.eta_seconds = max(0.0, float(estimate))
+        self.eta_updated_at = time.monotonic()
+        self.refresh_eta()
+        if not self.eta_timer.isActive():
+            self.eta_timer.start()
+
+    def refresh_eta(self):
+        if self.eta_updated_at is None:
+            return
+        remaining = max(
+            0,
+            math.ceil(
+                self.eta_seconds - (time.monotonic() - self.eta_updated_at)
+            ),
+        )
+        self.eta_label.setText(f"ETA: {remaining // 60}m {remaining % 60:02d}s")
 
     def show_message(self, message):
         QMessageBox.information(self, "DD Operation", message)

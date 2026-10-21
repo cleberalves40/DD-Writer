@@ -15,6 +15,13 @@ class Device:
     description: str
 
 
+def estimate_remaining_seconds(total_size, transferred, elapsed_seconds):
+    if total_size <= 0 or transferred <= 0 or elapsed_seconds <= 0:
+        return None
+    remaining_bytes = max(0, total_size - transferred)
+    return remaining_bytes * elapsed_seconds / transferred
+
+
 def _parse_freebsd_disks(output):
     disks = []
     name = None

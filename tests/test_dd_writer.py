@@ -11,6 +11,7 @@ from dd_writer import (
     _is_mounted_disk,
     _parse_freebsd_disks,
     build_dd_command,
+    estimate_remaining_seconds,
     list_devices,
     validate_write,
     write_image,
@@ -72,6 +73,18 @@ class WriteValidationTests(unittest.TestCase):
             image.write_bytes(b"image")
             with self.assertRaisesRegex(ValueError, "no longer available"):
                 validate_write(image, "/dev/ada0", [Device("/dev/da1", 10, "USB")])
+
+
+class EtaEstimateTests(unittest.TestCase):
+    def test_estimates_remaining_time_from_raw_byte_rate(self):
+        self.assertEqual(estimate_remaining_seconds(1000, 200, 10), 40)
+
+    def test_returns_zero_when_all_bytes_are_transferred(self):
+        self.assertEqual(estimate_remaining_seconds(1000, 1000, 10), 0)
+
+    def test_rejects_unavailable_rate_inputs(self):
+        self.assertIsNone(estimate_remaining_seconds(1000, 0, 10))
+        self.assertIsNone(estimate_remaining_seconds(1000, 100, 0))
 
 
 class WriteCommandTests(unittest.TestCase):
