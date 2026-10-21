@@ -22,6 +22,13 @@ def estimate_remaining_seconds(total_size, transferred, elapsed_seconds):
     return remaining_bytes * elapsed_seconds / transferred
 
 
+def parse_dd_transferred_bytes(line):
+    match = re.search(
+        r"\b(\d+)\s+bytes(?:\s+\([^)]*\))?\s+transferred\b", line
+    )
+    return int(match.group(1)) if match else None
+
+
 def _parse_freebsd_disks(output):
     disks = []
     name = None
