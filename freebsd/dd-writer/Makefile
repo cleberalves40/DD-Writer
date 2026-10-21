@@ -1,5 +1,5 @@
 PORTNAME= dd-writer
-PORTVERSION= 0.1.0
+PORTVERSION= 0.1.1
 CATEGORIES= sysutils
 MASTER_SITES= https://github.com/cleberalves40/DD-Writer/releases/download/v${PORTVERSION}/
 DISTNAME= ${PORTNAME}-${PORTVERSION}

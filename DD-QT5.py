@@ -1,5 +1,4 @@
 import math
-import re
 import os
 import signal
 import sys
@@ -22,6 +21,7 @@ from PyQt5.QtWidgets import (
 from dd_writer import (
     estimate_remaining_seconds,
     list_devices,
+    parse_dd_transferred_bytes,
     validate_write,
     write_image,
 )
@@ -54,9 +54,8 @@ class DdThread(QThread):
             for line in self.process.stderr:
                 output_lines.append(line.strip())
                 output_lines = output_lines[-3:]
-                match = re.search(r"(\d+)\s+bytes transferred", line)
-                if match:
-                    transferred = int(match.group(1))
+                transferred = parse_dd_transferred_bytes(line)
+                if transferred is not None:
                     progress = min(99, int(transferred * 100 / image_size))
                     self.progress.emit(progress)
                     remaining = estimate_remaining_seconds(
