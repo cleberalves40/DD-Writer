@@ -1,0 +1,3 @@
+DD Image Writer is a small Qt application for writing disk images to removable
+devices. It discovers available disks, checks image size, and displays write
+progress while keeping system and mounted disks out of the target list.
