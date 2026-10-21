@@ -1,7 +1,7 @@
 PORTNAME= dd-writer
 PORTVERSION= 0.1.0
 CATEGORIES= sysutils
-MASTER_SITES= LOCAL/cleberalves40
+MASTER_SITES= https://github.com/cleberalves40/DD-Writer/releases/download/v${PORTVERSION}/
 DISTNAME= ${PORTNAME}-${PORTVERSION}
 
 MAINTAINER= cleber@bsd.com.br
