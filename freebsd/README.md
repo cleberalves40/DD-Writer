@@ -1,8 +1,8 @@
 # FreeBSD Port
 
 The port downloads its source archive from the public GitHub Release matching
-`PORTVERSION`. For version `0.1.0`, it expects tag `v0.1.0` and asset
-`dd-writer-0.1.0.tar.gz`.
+`PORTVERSION`. For version `0.1.1`, it expects tag `v0.1.1` and asset
+`dd-writer-0.1.1.tar.gz`.
 
 ## Build
 
@@ -20,7 +20,8 @@ pre-populated `DISTDIR` are needed.
 To prepare a new release asset, archive the application sources from its tag:
 
 ```sh
-git archive --format=tar --prefix=dd-writer-0.1.0/ v0.1.0 DD-QT5.py dd_writer.py LICENSE | gzip -n > dd-writer-0.1.0.tar.gz
+git archive --format=tar --prefix=dd-writer-0.1.1/ v0.1.1 \
+  DD-QT5.py dd_writer.py LICENSE | gzip -n > dd-writer-0.1.1.tar.gz
 ```
 
 Upload the archive to the GitHub Release for that tag. Update `PORTVERSION`,

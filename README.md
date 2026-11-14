@@ -1,8 +1,8 @@
 # DD Image Writer
 
 DD Image Writer is a small PyQt5 application for writing image files to
-removable disks. It currently has disk discovery backends for macOS and
-FreeBSD.
+removable disks. It currently has disk discovery backends for **macOS** and
+**FreeBSD**. OpenBSD and NetBSD are not supported yet.
 
 ## Run
 
@@ -33,6 +33,6 @@ python3 -m unittest discover -s tests -v
 
 ## FreeBSD Port
 
-See [`freebsd/README.md`](freebsd/README.md) for the private distfile workflow
-and release gates. The project is licensed under the BSD 3-Clause License;
-public Ports submission still requires an anonymously fetchable source archive.
+See [`freebsd/README.md`](freebsd/README.md) for the public GitHub Release
+distfile workflow. Source archives for tagged releases (including `v0.1.1`) are
+anonymously fetchable. The project is licensed under the BSD 3-Clause License.
